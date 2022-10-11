@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@talkjs/expo": "^0.4.2"
+  }
+}
