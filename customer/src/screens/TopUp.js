@@ -8,28 +8,39 @@ import {
   Button,
   TouchableOpacity,
   Alert,
+  AsyncStorage,
 } from "react-native";
 import { useState } from "react";
 import axios from "axios";
+import { useFocusEffect } from "@react-navigation/native";
+import * as React from "react";
 
 export default function TopUp({ navigation }) {
   const [value, setValue] = useState("");
+  const [token, setToken] = useState("");
+
+  const getData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem("@storage_Key");
+      let value = JSON.parse(jsonValue);
+      setToken(value.access_token);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const onSubmit = (value) => async () => {
     try {
       if (value < 100000 || !value) {
         Alert.alert("Alert", "Minimum Top up is Rp 100.000");
       } else {
-        const id = new Date().getTime();
-        const order = `${id}--testing`;
-
         const { data } = await axios({
-          url: "https://23e3-202-80-215-137.ap.ngrok.io" + "/users/balances",
+          url: "https://2d0a-202-80-215-137.ap.ngrok.io" + "/users/topup",
           method: "post",
           data: {
-            order: order,
             gross: value,
           },
+          headers: { access_token: token },
         });
         navigation.navigate("Midtrans", { url: data.redirect_url });
       }
@@ -37,6 +48,12 @@ export default function TopUp({ navigation }) {
       Alert.alert("Alert", err);
     }
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getData();
+    }, [])
+  );
 
   return (
     <View style={styles.containerPhoto}>

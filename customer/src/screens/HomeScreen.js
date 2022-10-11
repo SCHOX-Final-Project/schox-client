@@ -24,18 +24,17 @@ export default function HomeScreen({ navigation }) {
     try {
       const jsonValue = await AsyncStorage.getItem("@storage_Key");
       let value = JSON.parse(jsonValue);
-      await detailCustomer(value?.id);
+      await detailCustomer(value?.id, value?.access_token);
     } catch (e) {
       console.log(e);
     }
   };
-  const detailCustomer = async (id) => {
+  const detailCustomer = async (id, access_token) => {
     try {
       const { data } = await axios({
-        url:
-          "https://5299-2001-448a-2040-44a9-c6e-79a9-fa8a-6fc1.ap.ngrok.io/users/" +
-          id,
+        url: "https://2d0a-202-80-215-137.ap.ngrok.io/users/" + id,
         method: "GET",
+        headers: { access_token: access_token },
       });
       setDetail(data);
     } catch (e) {

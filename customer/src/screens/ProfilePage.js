@@ -9,6 +9,10 @@ import {
   TouchableHighlight,
   AsyncStorage,
 } from "react-native";
+import * as React from "react";
+import { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import axios from "axios";
 
 import profile from "../../assets/icon/SeekPng.com_profile-icon-png_9665493.png";
 import topUp from "../../assets/icon/wallet.png";
@@ -24,13 +28,46 @@ export default function ProfilePage({ navigation }) {
     });
   };
 
+  const [detail, setDetail] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const getData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem("@storage_Key");
+      let value = JSON.parse(jsonValue);
+      await detailCustomer(value?.id, value?.access_token);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const detailCustomer = async (id, access_token) => {
+    try {
+      const { data } = await axios({
+        url: "https://2d0a-202-80-215-137.ap.ngrok.io/users/" + id,
+        method: "GET",
+        headers: { access_token: access_token },
+      });
+      setDetail(data);
+      setLoading(false);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getData();
+    }, [])
+  );
+
+  if (loading) return <Text>Loading...</Text>;
   return (
     <View style={styles.containerPhoto}>
       <View style={styles.userView}>
         <Image style={styles.profile} source={profile} />
         <View style={{ marginStart: 15 }}>
-          <Text style={styles.hallo}>(Nama UserName)</Text>
-          <Text style={styles.date}>(Nomor Telepon Username)</Text>
+          <Text style={styles.hallo}>{detail.fullName}</Text>
+          <Text style={styles.date}>{detail.phoneNumber}</Text>
         </View>
       </View>
 
@@ -38,7 +75,9 @@ export default function ProfilePage({ navigation }) {
       <View style={styles.horizontalLine} />
       <View style={styles.containerMiddle}>
         <View style={styles.containerWallet}>
-          <Text style={styles.infoText}>Rp 500.000</Text>
+          <Text style={styles.infoText}>
+            Rp {detail.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+          </Text>
           <Text style={styles.infoMoney}>Balance</Text>
         </View>
         <View style={styles.verticleLine}></View>

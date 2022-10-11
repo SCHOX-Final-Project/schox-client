@@ -8,11 +8,11 @@ export default function Home({ navigation, route }) {
     <WebView
       style={styles.container}
       source={{ uri: url }}
-      // onNavigationStateChange={(navState) => {
-      //   if (navState.url.includes("success")) {
-      //     navigation.goBack();
-      //   }
-      // }}
+      onNavigationStateChange={(navState) => {
+        if (navState.url.includes("status_code=200")) {
+          navigation.navigate("ProfileScreen");
+        }
+      }}
     />
   );
 }

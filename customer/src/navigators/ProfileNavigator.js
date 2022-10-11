@@ -24,7 +24,7 @@ export default function SubscriptionNavigator() {
       <Stack.Screen
         name="Midtrans"
         component={MidtransScreen}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

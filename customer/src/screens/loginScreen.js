@@ -44,6 +44,7 @@ export default function LoginScreen({ navigation }) {
         method: "POST",
         data: { email, password },
       });
+      // console.log(data);
       await storeData({ id: data.id, access_token: data.access_token });
       navigation.navigate({
         name: "Home",
