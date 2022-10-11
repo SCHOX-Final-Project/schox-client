@@ -9,8 +9,8 @@ export default function MidtransScreen({ navigation, route }) {
       style={styles.container}
       source={{ uri: url }}
       onNavigationStateChange={(navState) => {
-        if (navState.url.includes("success")) {
-          navigation.goBack();
+        if (navState.url.includes("status_code=200")) {
+          navigation.navigate("ProfilePage");
         }
       }}
     />

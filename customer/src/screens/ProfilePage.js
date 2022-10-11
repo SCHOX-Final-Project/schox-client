@@ -14,6 +14,7 @@ import { baseUrl } from "../constants/baseUrl";
 
 export default function ProfilePage({ navigation }) {
   const [detail, setDetail] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const getData = async () => {
     try {
@@ -32,6 +33,7 @@ export default function ProfilePage({ navigation }) {
         headers: { access_token: token },
       });
       setDetail(data);
+      setLoading(false);
     } catch (e) {
       console.log(e);
     }
@@ -51,13 +53,14 @@ export default function ProfilePage({ navigation }) {
     }, [])
   );
 
+  if (loading) return <Text>Loading...</Text>;
   return (
     <View style={styles.containerPhoto}>
       <View style={styles.userView}>
         <Image style={styles.profile} source={profile} />
         <View style={{ marginStart: 15 }}>
-          <Text style={styles.hallo}>{detail?.fullName}</Text>
-          <Text style={styles.date}>{detail?.phoneNumber}</Text>
+          <Text style={styles.hallo}>{detail?.user.fullName}</Text>
+          <Text style={styles.date}>{detail?.user.phoneNumber}</Text>
         </View>
       </View>
 
@@ -66,7 +69,10 @@ export default function ProfilePage({ navigation }) {
       <View style={styles.containerMiddle}>
         <View style={styles.containerWallet}>
           <Text style={styles.infoText}>
-            Rp {detail.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+            Rp{" "}
+            {detail.user.balance
+              .toString()
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
           </Text>
           <Text style={styles.infoMoney}>Balance</Text>
         </View>
@@ -93,7 +99,7 @@ export default function ProfilePage({ navigation }) {
         </Pressable>
         <View style={styles.menuRow}>
           <Image style={styles.menu} source={location} />
-          <Text style={styles.textMenu}>{detail.address}</Text>
+          <Text style={styles.textMenu}>{detail.user.address}</Text>
         </View>
         <Pressable onPress={() => logout()} style={styles.menuRow}>
           <Image style={styles.menu} source={logOut} />
