@@ -12,7 +12,6 @@ export default function TripScreen() {
     const [socketCoordinate, setSocketCoordinate] = useState({});
     const [statusDriver, setStatusDriver] = useState('');
 
-
     const [myLocation, setMyLocation] = useState({});
 
     useEffect(() => {
@@ -29,110 +28,179 @@ export default function TripScreen() {
         });
     }, [])
 
-    const getLocation = async () => {
-        try {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== "granted") {
-                return;
-            }
-            let location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-                enableHighAccuracy: true,
-                timeInterval: 5,
-            });
-            await mapRef.current.animateCamera({
-                center: {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                },
-            });
+    socketInstance.on("recieve:status-driver", (data) => {
+      setStatusDriver(data);
+    });
+  }, []);
+  const getLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        enableHighAccuracy: true,
+        timeInterval: 5,
+      });
+      await mapRef.current.animateCamera({
+        center: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+      });
 
-            setMyLocation(location.coords);
-        } catch (e) {
-            console.log(e);
-        }
-    };
+      setMyLocation(location.coords);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  
+  useEffect(() => {
+    getLocation();
+  }, [])
 
-    useEffect(() => {
-      getLocation();
-    }, [])
+  return (
+      <View style={styles.container}>
+          {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
+          <View style={styles.cardTop}>
+              <Text>STATUS: {statusDriver ? statusDriver : 'Pending'}</Text>
+          </View>
+          <View style={styles.cardBottom}>
+              <MapView
+                  ref={mapRef}
+                  style={styles.map}
+                  minZoomLevel={12}
+                  provider={PROVIDER_GOOGLE}
+                  showsUserLocation={true}
+                  zoomControlEnabled={true}
+                  initialRegion={{
+                      latitude: -6.200000,
+                      longitude: 106.816666,
+                      latitudeDelta: 0.0922,
+                      longitudeDelta: 0.0421,
+                  }}
+              >
 
-    return (
-        <View style={styles.container}>
-            {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
-            <View style={styles.cardTop}>
-                <Text>STATUS: {statusDriver ? statusDriver : 'Pending'}</Text>
-            </View>
-            <View style={styles.cardBottom}>
-                <MapView
-                    ref={mapRef}
-                    style={styles.map}
-                    minZoomLevel={12}
-                    provider={PROVIDER_GOOGLE}
-                    showsUserLocation={true}
-                    zoomControlEnabled={true}
-                    initialRegion={{
-                        latitude: -6.200000,
-                        longitude: 106.816666,
-                        latitudeDelta: 0.0922,
-                        longitudeDelta: 0.0421,
-                    }}
-                >
+                  {socketCoordinate.latitude && <Marker coordinate={socketCoordinate} title={"Socket Location"}/>}
 
-                    {socketCoordinate.latitude && <Marker coordinate={socketCoordinate} title={"Socket Location"}/>}
-
-                    {(myLocation.latitude && !socketCoordinate.latitude) && <Marker coordinate={myLocation} title={"My Location"}/>}
+                  {(myLocation.latitude && !socketCoordinate.latitude) && <Marker coordinate={myLocation} title={"My Location"}/>}
 
 
-                    {driverCoordinate.latitude &&
-                        <Marker coordinate={driverCoordinate} title={"Driver Location"} pinColor={"blue"}/>
-                    }
-                    {(driverCoordinate.latitude && (socketCoordinate.latitude || myLocation.latitude )) &&
-                        <MapViewDirections
-                            origin={driverCoordinate}
-                            destination={socketCoordinate ? socketCoordinate : myLocation}
-                            apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
-                            strokeWidth={4}
-                            strokeColor="red"
-                        />
-                    }
+                  {driverCoordinate.latitude &&
+                      <Marker coordinate={driverCoordinate} title={"Driver Location"} pinColor={"blue"}/>
+                  }
+                  {(driverCoordinate.latitude && (socketCoordinate.latitude || myLocation.latitude )) &&
+                      <MapViewDirections
+                          origin={driverCoordinate}
+                          destination={socketCoordinate ? socketCoordinate : myLocation}
+                          apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
+                          strokeWidth={4}
+                          strokeColor="red"
+                      />
+                  }
 
-                </MapView>
-            </View>
-        </View>
-    );
+  return (
+    <View style={styles.container}>
+      {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
+      <View style={styles.cardBottom}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          minZoomLevel={12}
+          provider={PROVIDER_GOOGLE}
+          showsUserLocation={true}
+          zoomControlEnabled={true}
+          initialRegion={{
+            latitude: -6.2,
+            longitude: 106.816666,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        >
+          {socketCoordinate.latitude && (
+            <Marker coordinate={socketCoordinate} title={"Socket Location"} />
+          )}
+
+          {myLocation.latitude && !socketCoordinate.latitude && (
+            <Marker coordinate={myLocation} title={"My Location"} />
+          )}
+
+          {driverCoordinate.latitude && (
+            <Marker
+              coordinate={driverCoordinate}
+              title={"Driver Location"}
+              pinColor={"blue"}
+            />
+          )}
+          {driverCoordinate.latitude &&
+            (socketCoordinate.latitude || myLocation.latitude) && (
+              <MapViewDirections
+                origin={driverCoordinate}
+                destination={socketCoordinate ? socketCoordinate : myLocation}
+                apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
+                strokeWidth={4}
+                strokeColor="red"
+              />
+            )}
+        </MapView>
+      </View>
+      <View style={[styles.cardTop, styles.shadow]}>
+        <Text style={styles.status}>STATUS</Text>
+        <Text style={styles.statusDetail}>
+          {statusDriver ? statusDriver : "Pending"}
+        </Text>
+      </View>
+    </View>
+  );
 }
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#DEE9FF",
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#DEE9FF",
     },
     cardTop: {
-        width: '90%',
-        height: 30,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "white",
-        borderRadius: 20,
-        marginVertical: 20
+      width: "90%",
+      height: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "white",
+      borderRadius: 20,
+      position: "absolute",
+      top: 100,
+      height: 70,
+    },
+    shadow: {
+      shadowColor: "#171717",
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3
     },
     cardBottom: {
-        overflow: "hidden",
-        flex: 3,
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
-        width: "100%",
-        backgroundColor: "white",
-        borderTopStartRadius: 30,
-        borderTopEndRadius: 30,
-        borderWidth: 1,
-        borderColor: "white",
-
+      overflow: "hidden",
+      flex: 3,
+      alignItems: "flex-start",
+      justifyContent: "flex-start",
+      width: "100%",
+      backgroundColor: "white",
+      borderTopStartRadius: 30,
+      borderTopEndRadius: 30,
+      borderWidth: 1,
+      borderColor: "white",
     },
     map: {
-        height: "100%",
-        width: "100%",
+      height: "100%",
+      width: "100%",
+    },
+    status: {
+      fontWeight: "bold",
+      color: "#0d155a",
+      fontSize: 30,
+    },
+    statusDetail: {
+      color: "#399ae7",
     },
 });
