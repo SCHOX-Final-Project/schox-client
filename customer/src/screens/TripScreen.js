@@ -8,20 +8,25 @@ import * as React from "react";
 
 const mapRef = React.createRef();
 export default function TripScreen() {
-  const [driverCoordinate, setDriverCoordinate] = useState({});
-  const [socketCoordinate, setSocketCoordinate] = useState({});
-  const [statusDriver, setStatusDriver] = useState("");
+    const [driverCoordinate, setDriverCoordinate] = useState({});
+    const [socketCoordinate, setSocketCoordinate] = useState({});
+    const [statusDriver, setStatusDriver] = useState('');
 
-  const [myLocation, setMyLocation] = useState({});
+    const [myLocation, setMyLocation] = useState({});
 
-  useEffect(() => {
-    socketInstance.on("recieve:interval", (data) => {
-      setDriverCoordinate(data);
-    });
-
-    socketInstance.on("recieve:coordinate-customer", (data) => {
-      setSocketCoordinate(data);
-    });
+    useEffect(() => {
+        socketInstance.on("recieve:interval", (data) => {
+            setDriverCoordinate(data);
+        });
+    
+        socketInstance.on("recieve:coordinate-customer", (data) => {
+            setSocketCoordinate(data);
+        });
+    
+        socketInstance.on("recieve:status-driver", (data) => {
+            setStatusDriver(data);
+        });
+    }, [])
 
     socketInstance.on("recieve:status-driver", (data) => {
       setStatusDriver(data);
@@ -50,10 +55,50 @@ export default function TripScreen() {
       console.log(e);
     }
   };
-
+  
   useEffect(() => {
     getLocation();
-  }, []);
+  }, [])
+
+  return (
+      <View style={styles.container}>
+          {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
+          <View style={styles.cardTop}>
+              <Text>STATUS: {statusDriver ? statusDriver : 'Pending'}</Text>
+          </View>
+          <View style={styles.cardBottom}>
+              <MapView
+                  ref={mapRef}
+                  style={styles.map}
+                  minZoomLevel={12}
+                  provider={PROVIDER_GOOGLE}
+                  showsUserLocation={true}
+                  zoomControlEnabled={true}
+                  initialRegion={{
+                      latitude: -6.200000,
+                      longitude: 106.816666,
+                      latitudeDelta: 0.0922,
+                      longitudeDelta: 0.0421,
+                  }}
+              >
+
+                  {socketCoordinate.latitude && <Marker coordinate={socketCoordinate} title={"Socket Location"}/>}
+
+                  {(myLocation.latitude && !socketCoordinate.latitude) && <Marker coordinate={myLocation} title={"My Location"}/>}
+
+
+                  {driverCoordinate.latitude &&
+                      <Marker coordinate={driverCoordinate} title={"Driver Location"} pinColor={"blue"}/>
+                  }
+                  {(driverCoordinate.latitude && (socketCoordinate.latitude || myLocation.latitude )) &&
+                      <MapViewDirections
+                          origin={driverCoordinate}
+                          destination={socketCoordinate ? socketCoordinate : myLocation}
+                          apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
+                          strokeWidth={4}
+                          strokeColor="red"
+                      />
+                  }
 
   return (
     <View style={styles.container}>
@@ -110,52 +155,52 @@ export default function TripScreen() {
   );
 }
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#DEE9FF",
-  },
-  cardTop: {
-    width: "90%",
-    height: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "white",
-    borderRadius: 20,
-    position: "absolute",
-    top: 100,
-    height: 70,
-  },
-  shadow: {
-    shadowColor: "#171717",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3
-  },
-  cardBottom: {
-    overflow: "hidden",
-    flex: 3,
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    width: "100%",
-    backgroundColor: "white",
-    borderTopStartRadius: 30,
-    borderTopEndRadius: 30,
-    borderWidth: 1,
-    borderColor: "white",
-  },
-  map: {
-    height: "100%",
-    width: "100%",
-  },
-  status: {
-    fontWeight: "bold",
-    color: "#0d155a",
-    fontSize: 30,
-  },
-  statusDetail: {
-    color: "#399ae7",
-  },
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#DEE9FF",
+    },
+    cardTop: {
+      width: "90%",
+      height: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "white",
+      borderRadius: 20,
+      position: "absolute",
+      top: 100,
+      height: 70,
+    },
+    shadow: {
+      shadowColor: "#171717",
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3
+    },
+    cardBottom: {
+      overflow: "hidden",
+      flex: 3,
+      alignItems: "flex-start",
+      justifyContent: "flex-start",
+      width: "100%",
+      backgroundColor: "white",
+      borderTopStartRadius: 30,
+      borderTopEndRadius: 30,
+      borderWidth: 1,
+      borderColor: "white",
+    },
+    map: {
+      height: "100%",
+      width: "100%",
+    },
+    status: {
+      fontWeight: "bold",
+      color: "#0d155a",
+      fontSize: 30,
+    },
+    statusDetail: {
+      color: "#399ae7",
+    },
 });

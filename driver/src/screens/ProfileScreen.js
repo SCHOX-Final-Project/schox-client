@@ -15,8 +15,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { baseUrl } from "../constants/baseUrl";
 import { useDispatch, useSelector } from "react-redux";
 import {
-getDataDriver,
-patchStatusDriver,
+  getDataDriver,
+  patchStatusDriver,
 } from "../store/actions/driverAction";
 import axios from "axios";
 import car from "../../assets/car.png";
@@ -571,5 +571,4 @@ control: {
   width: 270,
   flexDirection: "row",
 },
-
 });
