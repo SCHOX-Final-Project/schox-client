@@ -3,18 +3,31 @@ import { socketInstance } from "../socket/socket";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useState, useEffect } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import MapViewDirections from "react-native-maps-directions";
 import * as React from "react";
 
 const mapRef = React.createRef();
 export default function TripScreen() {
     const [driverCoordinate, setDriverCoordinate] = useState({});
+    const [socketCoordinate, setSocketCoordinate] = useState({});
+    const [statusDriver, setStatusDriver] = useState('');
+
+
     const [myLocation, setMyLocation] = useState({});
 
-    socketInstance.on("recieve:interval", (data) => {
-        setDriverCoordinate(data);
-    });
+    useEffect(() => {
+        socketInstance.on("recieve:interval", (data) => {
+            setDriverCoordinate(data);
+        });
+    
+        socketInstance.on("recieve:coordinate-customer", (data) => {
+            setSocketCoordinate(data);
+        });
+    
+        socketInstance.on("recieve:status-driver", (data) => {
+            setStatusDriver(data);
+        });
+    }, [])
 
     const getLocation = async () => {
         try {
@@ -43,12 +56,12 @@ export default function TripScreen() {
     useEffect(() => {
       getLocation();
     }, [])
-    console.log(driverCoordinate);
+
     return (
         <View style={styles.container}>
             {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
             <View style={styles.cardTop}>
-                <Text style={{fontWeight: "bold"}}>TRACK DRIVER</Text>
+                <Text>STATUS: {statusDriver ? statusDriver : 'Pending'}</Text>
             </View>
             <View style={styles.cardBottom}>
                 <MapView
@@ -65,16 +78,19 @@ export default function TripScreen() {
                         longitudeDelta: 0.0421,
                     }}
                 >
-                    {myLocation.latitude &&
-                        <Marker coordinate={myLocation} title={"My Location"}/>
-                    }
+
+                    {socketCoordinate.latitude && <Marker coordinate={socketCoordinate} title={"Socket Location"}/>}
+
+                    {(myLocation.latitude && !socketCoordinate.latitude) && <Marker coordinate={myLocation} title={"My Location"}/>}
+
+
                     {driverCoordinate.latitude &&
                         <Marker coordinate={driverCoordinate} title={"Driver Location"} pinColor={"blue"}/>
                     }
-                    {driverCoordinate.latitude !== null &&
+                    {(driverCoordinate.latitude && (socketCoordinate.latitude || myLocation.latitude )) &&
                         <MapViewDirections
                             origin={driverCoordinate}
-                            destination={myLocation}
+                            destination={socketCoordinate ? socketCoordinate : myLocation}
                             apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
                             strokeWidth={4}
                             strokeColor="red"
