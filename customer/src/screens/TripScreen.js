@@ -26,12 +26,7 @@ export default function TripScreen() {
         socketInstance.on("recieve:status-driver", (data) => {
             setStatusDriver(data);
         });
-    }, [])
-
-    socketInstance.on("recieve:status-driver", (data) => {
-      setStatusDriver(data);
-    });
-  }, []);
+    }, []);
   const getLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -59,46 +54,6 @@ export default function TripScreen() {
   useEffect(() => {
     getLocation();
   }, [])
-
-  return (
-      <View style={styles.container}>
-          {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
-          <View style={styles.cardTop}>
-              <Text>STATUS: {statusDriver ? statusDriver : 'Pending'}</Text>
-          </View>
-          <View style={styles.cardBottom}>
-              <MapView
-                  ref={mapRef}
-                  style={styles.map}
-                  minZoomLevel={12}
-                  provider={PROVIDER_GOOGLE}
-                  showsUserLocation={true}
-                  zoomControlEnabled={true}
-                  initialRegion={{
-                      latitude: -6.200000,
-                      longitude: 106.816666,
-                      latitudeDelta: 0.0922,
-                      longitudeDelta: 0.0421,
-                  }}
-              >
-
-                  {socketCoordinate.latitude && <Marker coordinate={socketCoordinate} title={"Socket Location"}/>}
-
-                  {(myLocation.latitude && !socketCoordinate.latitude) && <Marker coordinate={myLocation} title={"My Location"}/>}
-
-
-                  {driverCoordinate.latitude &&
-                      <Marker coordinate={driverCoordinate} title={"Driver Location"} pinColor={"blue"}/>
-                  }
-                  {(driverCoordinate.latitude && (socketCoordinate.latitude || myLocation.latitude )) &&
-                      <MapViewDirections
-                          origin={driverCoordinate}
-                          destination={socketCoordinate ? socketCoordinate : myLocation}
-                          apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
-                          strokeWidth={4}
-                          strokeColor="red"
-                      />
-                  }
 
   return (
     <View style={styles.container}>
