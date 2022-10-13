@@ -1,5 +1,6 @@
 import {
 <<<<<<< HEAD
+<<<<<<< HEAD
   Image,
   ScrollView,
   StyleSheet,
@@ -7,13 +8,18 @@ import {
   TouchableHighlight,
   View,
 =======
+=======
+>>>>>>> e5e970f9e926c97a8dffd2ba166c05927e7e8a74
     Image,
     ScrollView,
     StyleSheet,
     Text,
     TouchableHighlight,
     View,
+<<<<<<< HEAD
 >>>>>>> a0243f51b02d57eef6c08adc07df5cc21e6f4f16
+=======
+>>>>>>> e5e970f9e926c97a8dffd2ba166c05927e7e8a74
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
@@ -30,6 +36,8 @@ import {
 } from "../store/actions/driverAction";
 import axios from "axios";
 import car from "../../assets/car.png";
+import {socketInstance} from "../socket/socket";
+import * as Location from "expo-location";
 
 export default function ProfileScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -41,7 +49,51 @@ export default function ProfileScreen({ navigation }) {
   const [isBooked, setIsBooked] = useState(null);
   const [subsDetail, setSubsDetail] = useState({});
   const [userDetail, setUserDetail] = useState({});
+  const [school, setSchoolDetail] = useState({});
+  const [isPickup, setIsPickup] = useState(true);
+  const [isDeliver, setIsDeliver] = useState(false);
+  const [isArrive, setIsArrive] = useState(false);
+  const [isReady, setReady] = useState(false);
+  const [secondPickup, setSecondPickup] = useState(false);
+  const [finish, setFinish] = useState(false);
+  const [emit, setEmit] = useState("");
+  const [statusTrip, setStatusTrip] = useState("depart");
 
+  const getLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        enableHighAccuracy: true,
+        timeInterval: 5,
+      });
+      const coordinate = {
+        longitude: location.coords.longitude,
+        latitude: location.coords.latitude,
+      };
+      socketInstance.emit("send:interval", coordinate);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const start = () => {
+    console.log("start");
+    const intervalId = setInterval(() => {
+      getLocation();
+    }, 2000);
+
+    setEmit(intervalId);
+  };
+  const stop = () => {
+    clearInterval(emit);
+    setEmit("");
+    setStatusTrip("arrive");
+    console.log("stop");
+  };
   const logout = async () => {
     try {
       await AsyncStorage.clear();
@@ -71,6 +123,7 @@ export default function ProfileScreen({ navigation }) {
         setIsBooked("BOOKED");
         setSubsDetail(data.subsDetail);
         setUserDetail(data.user);
+        setSchoolDetail(data.school);
       } else {
         setIsBooked(null);
       }
@@ -87,6 +140,137 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  // RENDER SCHEDULE
+  const renderPickup = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              start()
+              navigation.navigate({
+                name: "Home",
+                params: {
+                  lat: userDetail?.latitude,
+                  lon: userDetail?.longitude,
+                },
+                merge: true,
+              });
+              setIsPickup(false);
+              setIsDeliver(true);
+            }}
+            style={styles.schedule}
+        >
+          <View style={{ flexDirection: "row" }}>
+            <Text style={styles.pickup}>PICKUP</Text>
+            <Image source={car} style={styles.car} />
+          </View>
+        </TouchableHighlight>
+    );
+  };
+  const renderDeliver = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              navigation.navigate({
+                name: "Home",
+                params: {
+                  lat: school?.latitude,
+                  lon: school?.longitude,
+                },
+                merge: true,
+              });
+              setIsDeliver(false);
+              setIsArrive(true);
+            }}
+            style={styles.schedule}
+        >
+          <View style={{ flexDirection: "row" }}>
+            <Text style={styles.pickup}>DELIVER</Text>
+            <Image source={car} style={styles.car} />
+          </View>
+        </TouchableHighlight>
+    );
+  };
+  const renderArrive = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              stop()
+              navigation.navigate({
+                name: "Home",
+                params: { lat: null, lon: null },
+                merge: true,
+              });
+              setIsArrive(false);
+              setReady(true);
+            }}
+            style={styles.pickup}
+        >
+          <Text>FINISH</Text>
+        </TouchableHighlight>
+    );
+  };
+  const renderReady = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              start()
+              navigation.navigate({
+                name: "Home",
+                params: {
+                  lat: school?.latitude,
+                  lon: school?.longitude,
+                },
+                merge: true,
+              });
+              setReady(false);
+              setSecondPickup(true);
+            }}
+            style={styles.pickup}
+        >
+          <Text>READY TO PICKUP ON SCHOOL?</Text>
+        </TouchableHighlight>
+    );
+  };
+  const secondPickupRender = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              navigation.navigate({
+                name: "Home",
+                params: {
+                  lat: userDetail?.latitude,
+                  lon: userDetail?.longitude,
+                },
+                merge: true,
+              });
+              setSecondPickup(false);
+              setFinish(true);
+            }}
+            style={styles.pickup}
+        >
+          <Text>GO HOME</Text>
+        </TouchableHighlight>
+    );
+  };
+  const finishRender = () => {
+    return (
+        <TouchableHighlight
+            onPress={() => {
+              stop()
+              navigation.navigate({
+                name: "Home",
+                params: { lat: null, lon: null },
+                merge: true,
+              });
+              setFinish(false);
+            }}
+            style={styles.pickup}
+        >
+          <Text>FINISH</Text>
+        </TouchableHighlight>
+    );
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       getData();
@@ -98,7 +282,6 @@ export default function ProfileScreen({ navigation }) {
         <Text
           style={{
             fontWeight: "bold",
-            fontSize: 24,
             color: "#2283d0",
             fontSize: 30,
           }}
@@ -121,31 +304,7 @@ export default function ProfileScreen({ navigation }) {
               justifyContent: "center",
             }}
           >
-            {!isBooked && (
-              <View
-                style={{
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: "#bdc3c7",
-                  overflow: "hidden",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  width: 160,
-                }}
-              >
-                <Picker
-                  style={[styles.button, { height: 20, width: "100%" }]}
-                  selectedValue={status}
-                  onValueChange={(itemValue, itemIndex) => {
-                    setStatus(itemValue);
-                    updateStatus(itemValue);
-                  }}
-                >
-                  <Picker.Item label="Available" value="Available" />
-                  <Picker.Item label="Non Available" value="NonAvailable" />
-                </Picker>
-              </View>
-            )}
+
           </View>
         </View>
         {/*  balance  */}
@@ -155,12 +314,41 @@ export default function ProfileScreen({ navigation }) {
             {driver.balance?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
           </Text>
         </View>
-        <TouchableHighlight
-          onPress={() => logout()}
-          style={[styles.button, styles.buttonLogout]}
-        >
-          <Text style={{ color: "white" }}>Logout</Text>
-        </TouchableHighlight>
+        <View style={{flexDirection: "row"}}>
+          {!isBooked && (
+              <View
+                  style={{
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: "#bdc3c7",
+                    overflow: "hidden",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: 160,
+                    marginRight: 10,
+                    height: 40
+                  }}
+              >
+                <Picker
+                    style={[styles.button, { width: "100%" }]}
+                    selectedValue={status}
+                    onValueChange={(itemValue, itemIndex) => {
+                      setStatus(itemValue);
+                      updateStatus(itemValue);
+                    }}
+                >
+                  <Picker.Item label="Available" value="Available" />
+                  <Picker.Item label="Non Available" value="NonAvailable" />
+                </Picker>
+              </View>
+          )}
+          <TouchableHighlight
+            onPress={() => logout()}
+            style={[styles.button, styles.buttonLogout]}
+          >
+            <Text style={{ color: "white" }}>Logout</Text>
+          </TouchableHighlight>
+        </View>
         {/*  schedule  */}
         <View style={styles.cardSchedule}>
           <ScrollView style={{ width: "100%", height: "100%" }}>
@@ -204,24 +392,12 @@ export default function ProfileScreen({ navigation }) {
                     </View>
                   </View>
                 </View>
-                <TouchableHighlight
-                  onPress={() => {
-                    navigation.navigate({
-                      name: "Home",
-                      params: {
-                        lat: userDetail?.latitude,
-                        lon: userDetail?.longitude,
-                      },
-                      merge: true,
-                    });
-                  }}
-                  style={styles.schedule}
-                >
-                  <View style={{ flexDirection: "row" }}>
-                    <Text style={styles.pickup}>PICKUP</Text>
-                    <Image source={car} style={styles.car} />
-                  </View>
-                </TouchableHighlight>
+                {isPickup && renderPickup()}
+                {isDeliver && renderDeliver()}
+                {isArrive && renderArrive()}
+                {isReady && renderReady()}
+                {secondPickup && secondPickupRender()}
+                {finish && finishRender()}
               </>
             )}
           </ScrollView>
@@ -261,6 +437,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
     elevation: 2,
+    height: 40
   },
   buttonOpen: {
     backgroundColor: "green",
@@ -350,7 +527,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   userName: {
-    color: "#4c93db",
+    color: "grey",
     fontWeight: "bold",
     fontSize: 18,
     marginBottom: 30,
@@ -374,6 +551,7 @@ const styles = StyleSheet.create({
     width: 270,
     flexDirection: "row",
   },
+<<<<<<< HEAD
 =======
     getDataDriver,
     patchStatusDriver,
@@ -855,4 +1033,7 @@ const styles = StyleSheet.create({
         marginHorizontal: "5%",
     },
 >>>>>>> a0243f51b02d57eef6c08adc07df5cc21e6f4f16
+=======
+
+>>>>>>> e5e970f9e926c97a8dffd2ba166c05927e7e8a74
 });

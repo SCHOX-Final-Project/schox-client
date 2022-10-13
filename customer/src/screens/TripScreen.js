@@ -100,10 +100,11 @@ const styles = StyleSheet.create({
   },
   card1: {
     position: "absolute",
-    top: 690,
+    top: 670,
     width: "100%",
     backgroundColor: "white",
     borderRadius: 10,
+    height: 300
   },
   shadowProp: {
     shadowColor: "#171717",
