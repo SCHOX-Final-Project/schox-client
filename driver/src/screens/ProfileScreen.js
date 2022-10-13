@@ -24,26 +24,26 @@ import {socketInstance} from "../socket/socket";
 import * as Location from "expo-location";
 
 export default function ProfileScreen({ navigation }) {
-const dispatch = useDispatch();
-const { driver } = useSelector((state) => {
-  return state.driverReducer;
-});
+  const dispatch = useDispatch();
+  const { driver } = useSelector((state) => {
+    return state.driverReducer;
+  });
 
-const [status, setStatus] = useState("Available");
-const [isBooked, setIsBooked] = useState(null);
-const [subsDetail, setSubsDetail] = useState({});
-const [userDetail, setUserDetail] = useState({});
-const [school, setSchoolDetail] = useState({});
-const [isPickup, setIsPickup] = useState(true);
-const [isDeliver, setIsDeliver] = useState(false);
-const [isArrive, setIsArrive] = useState(false);
-const [isReady, setReady] = useState(false);
-const [secondPickup, setSecondPickup] = useState(false);
-const [finish, setFinish] = useState(false);
-const [emit, setEmit] = useState("");
-const [statusTrip, setStatusTrip] = useState("depart");
+  const [status, setStatus] = useState("Available");
+  const [isBooked, setIsBooked] = useState(null);
+  const [subsDetail, setSubsDetail] = useState({});
+  const [userDetail, setUserDetail] = useState({});
+  const [school, setSchoolDetail] = useState({});
+  const [isPickup, setIsPickup] = useState(true);
+  const [isDeliver, setIsDeliver] = useState(false);
+  const [isArrive, setIsArrive] = useState(false);
+  const [isReady, setReady] = useState(false);
+  const [secondPickup, setSecondPickup] = useState(false);
+  const [finish, setFinish] = useState(false);
+  const [emit, setEmit] = useState("");
+  const [statusTrip, setStatusTrip] = useState("depart");
 
-const getLocation = async () => {
+  const getLocation = async () => {
   try {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
