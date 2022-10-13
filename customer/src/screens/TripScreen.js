@@ -1,25 +1,32 @@
-import { StyleSheet, Text, View, Image } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { socketInstance } from "../socket/socket";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useState, useEffect } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import MapViewDirections from "react-native-maps-directions";
 import * as React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import location from "../../assets/icon/location1.png";
-import arrive from "../../assets/icon/arrive.png";
-import prof from "../../assets/icon/profIcon1.png";
 
 const mapRef = React.createRef();
 export default function TripScreen() {
   const [driverCoordinate, setDriverCoordinate] = useState({});
+  const [socketCoordinate, setSocketCoordinate] = useState({});
+  const [statusDriver, setStatusDriver] = useState("");
+
   const [myLocation, setMyLocation] = useState({});
 
-  socketInstance.on("recieve:interval", (data) => {
-    setDriverCoordinate(data);
-  });
+  useEffect(() => {
+    socketInstance.on("recieve:interval", (data) => {
+      setDriverCoordinate(data);
+    });
 
+    socketInstance.on("recieve:coordinate-customer", (data) => {
+      setSocketCoordinate(data);
+    });
+
+    socketInstance.on("recieve:status-driver", (data) => {
+      setStatusDriver(data);
+    });
+  }, []);
   const getLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -38,10 +45,7 @@ export default function TripScreen() {
         },
       });
 
-      setMyLocation({
-        longitude: location.coords.longitude,
-        latitude: location.coords.latitude,
-      });
+      setMyLocation(location.coords);
     } catch (e) {
       console.log(e);
     }
@@ -50,31 +54,57 @@ export default function TripScreen() {
   useEffect(() => {
     getLocation();
   }, []);
-  console.log(myLocation);
+
   return (
     <View style={styles.container}>
-      <MapView style={styles.map} />
       {/* <Text>{JSON.stringify(driverCoordinate)}</Text> */}
-      <View style={[styles.card, styles.shadowProp]}>
-        <View style={styles.address}>
-          <Image source={location} style={styles.icon} />
-          <Text>Home Address</Text>
-        </View>
-        <View style={styles.underline}></View>
-        <View style={styles.address}>
-          <Image source={arrive} style={styles.icon1} />
-          <Text>School Address</Text>
-        </View>
+      <View style={styles.cardBottom}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          minZoomLevel={12}
+          provider={PROVIDER_GOOGLE}
+          showsUserLocation={true}
+          zoomControlEnabled={true}
+          initialRegion={{
+            latitude: -6.2,
+            longitude: 106.816666,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        >
+          {socketCoordinate.latitude && (
+            <Marker coordinate={socketCoordinate} title={"Socket Location"} />
+          )}
+
+          {myLocation.latitude && !socketCoordinate.latitude && (
+            <Marker coordinate={myLocation} title={"My Location"} />
+          )}
+
+          {driverCoordinate.latitude && (
+            <Marker
+              coordinate={driverCoordinate}
+              title={"Driver Location"}
+              pinColor={"blue"}
+            />
+          )}
+          {driverCoordinate.latitude &&
+            (socketCoordinate.latitude || myLocation.latitude) && (
+              <MapViewDirections
+                origin={driverCoordinate}
+                destination={socketCoordinate ? socketCoordinate : myLocation}
+                apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
+                strokeWidth={4}
+                strokeColor="red"
+              />
+            )}
+        </MapView>
       </View>
-      <View style={[styles.card1, styles.shadowProp]}>
-        <View style={styles.address1}>
-          <Image source={{uri: 'https://t4.ftcdn.net/jpg/03/02/94/53/360_F_302945354_dqIiUiITKpard7fBVKDLtffIqnkDbyo4.jpg'}} style={styles.icon2} />
-          <View>
-            <Text style={{fontWeight: 'bold'}}>John Deep</Text>
-            <Text style={{color: 'gray'}}>B3131BMW</Text>
-            <Text style={{color: '#0d155a'}}>SCHOX DRIVER</Text>
-          </View>
-        </View>
+      <View style={[styles.cardTop, styles.shadow]}>
+        <Text style={styles.status}>STATUS</Text>
+        <Text style={styles.statusDetail}>
+          {statusDriver ? statusDriver : "Pending"}
+        </Text>
       </View>
     </View>
   );
@@ -86,62 +116,46 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#DEE9FF",
   },
-  map: {
-    height: 800,
-    width: "100%",
-  },
-  card: {
-    position: "absolute",
-    top: 60,
-    left: 20,
+  cardTop: {
     width: "90%",
-    backgroundColor: "white",
-    borderRadius: 10,
-  },
-  card1: {
-    position: "absolute",
-    top: 670,
-    width: "100%",
-    backgroundColor: "white",
-    borderRadius: 10,
-    height: 300
-  },
-  shadowProp: {
-    shadowColor: "#171717",
-    shadowOffset: { width: -2, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  underline: {
-    width: "90%",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#d6d6d6 ",
-    marginLeft: 15,
-  },
-  icon: {
-    width: 17,
-    height: 17,
-    margin: 10,
-  },
-  icon1: {
-    width: 15,
-    height: 15,
-    margin: 10,
-  },
-  icon2: {
-    width: 90,
-    height: 90,
-    margin: 10,
-    borderRadius: 50
-  },
-  address: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  address1: {
-    flexDirection: "row",
+    height: 30,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "white",
+    borderRadius: 20,
+    position: "absolute",
+    top: 100,
+    height: 70,
+  },
+  shadow: {
+    shadowColor: "#171717",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3
+  },
+  cardBottom: {
+    overflow: "hidden",
+    flex: 3,
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    width: "100%",
+    backgroundColor: "white",
+    borderTopStartRadius: 30,
+    borderTopEndRadius: 30,
+    borderWidth: 1,
+    borderColor: "white",
+  },
+  map: {
+    height: "100%",
+    width: "100%",
+  },
+  status: {
+    fontWeight: "bold",
+    color: "#0d155a",
+    fontSize: 30,
+  },
+  statusDetail: {
+    color: "#399ae7",
   },
 });
