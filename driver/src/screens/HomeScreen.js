@@ -1,172 +1,259 @@
-import { Image, Pressable, StyleSheet, Text, View} from "react-native";
-import {SafeAreaView} from 'react-native-safe-area-context';
-import MapView, {Marker, PROVIDER_GOOGLE} from "react-native-maps";
-import * as Location from 'expo-location';
-import { useState} from "react";
-import * as React from 'react';
-import {useFocusEffect} from "@react-navigation/native";
-import { useDispatch, useSelector } from "react-redux"
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import * as Location from "expo-location";
+import { useState, useEffect } from "react";
+import * as React from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useDispatch, useSelector } from "react-redux";
 import { getDataDriver } from "../store/actions/driverAction";
-import {baseUrl} from "../constants/baseUrl";
+import { baseUrl } from "../constants/baseUrl";
 import moment from "moment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapViewDirections from "react-native-maps-directions";
 
-
 const mapRef = React.createRef();
-export default function HomeScreen({navigation, route}) {
-    const dispatch = useDispatch()
+export default function HomeScreen({ navigation, route }) {
+    const dispatch = useDispatch();
     const { driver } = useSelector((state) => {
-        return state.driverReducer
-    })
+        return state.driverReducer;
+    });
 
     const [origin, setOrigin] = useState({
         longitude: 0,
-        latitude: 0
-    })
+        latitude: 0,
+    });
 
     const [customerCoord, setCustomerCoord] = useState({
-        latitude: 0,
-        longitude: 0
-    })
+        latitude: null,
+        longitude: null,
+    });
 
-    const [isBooked, setIsBooked] = useState(null)
-    const [endDate, setEndDate] = useState("")
-    const date = moment(endDate).format('MMMM D, YYYY')
+    const [isBooked, setIsBooked] = useState(null);
+    const [endDate, setEndDate] = useState("");
+    const date = moment(endDate).format("MMMM D, YYYY");
 
-
-    const getLocation = async() => {
+    const getLocation = async () => {
         try {
             let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
+            if (status !== "granted") {
                 return;
             }
             let location = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.Balanced,
                 enableHighAccuracy: true,
-                timeInterval: 5
+                timeInterval: 5,
             });
-            await mapRef.current.animateCamera({center: {"latitude":location.coords.latitude, "longitude": location.coords.longitude}})
+            await mapRef.current.animateCamera({
+                center: {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                },
+            });
 
-            setOrigin({longitude: location.coords.longitude, latitude: location.coords.latitude});
+            setOrigin({
+                longitude: location.coords.longitude,
+                latitude: location.coords.latitude,
+            });
         } catch (e) {
-            console.log(e)
+            console.log(e);
         }
-    }
+    };
     const getData = async () => {
         try {
-            dispatch(getDataDriver())
-            await mapRef.current.animateCamera({center: {"latitude":origin.latitude, "longitude": origin.longitude}})
-            const jsonValue = await AsyncStorage.getItem('@storage_Key')
-            let value = JSON.parse(jsonValue)
-            await checkStatus(value?.id)
-        } catch(e) {
-            console.log(e)
+            dispatch(getDataDriver());
+            await mapRef.current.animateCamera({
+                center: {
+                    latitude: origin.latitude,
+                    longitude: origin.longitude,
+                },
+            });
+            const jsonValue = await AsyncStorage.getItem("@storage_Key");
+            let value = JSON.parse(jsonValue);
+            await checkStatus(value?.id);
+        } catch (e) {
+            console.log(e);
         }
-    }
+    };
 
     const checkStatus = async (id) => {
         try {
-            const {data} = await axios({
+            const { data } = await axios({
                 url: baseUrl + "/drivers/subscriptions/" + id,
                 method: "GET",
-            })
+            });
 
             if (data.message === "BOOKED") {
-                setIsBooked("BOOKED")
-                setEndDate(data.subsDetail.endDate)
+                setIsBooked("BOOKED");
+                setEndDate(data.subsDetail.endDate);
             } else {
-                setIsBooked(null)
+                setIsBooked(null);
             }
         } catch (e) {
-            console.log(e)
+            console.log(e);
         }
-    }
+    };
 
     const checkSubs = async () => {
         try {
-            const jsonValue = await AsyncStorage.getItem('@storage_Key')
-            let value = JSON.parse(jsonValue)
-            if (moment(endDate).format('MMMM D, YYYY') === moment().format('MMMM D, YYYY')) {
-                const {data} = await axios({
+            const jsonValue = await AsyncStorage.getItem("@storage_Key");
+            let value = JSON.parse(jsonValue);
+            if (
+                moment(endDate).format("MMMM D, YYYY") ===
+                moment().format("MMMM D, YYYY")
+            ) {
+                const { data } = await axios({
                     url: baseUrl + "/drivers/subscriptions/" + value.id,
-                    method: "DELETE"
-                })
+                    method: "DELETE",
+                });
             } else {
-                console.log("belum habis")
+                console.log("belum habis");
             }
         } catch (e) {
-            console.log(e)
+            console.log(e);
         }
-    }
+    };
 
     useFocusEffect(
         React.useCallback(() => {
-            getData()
-            getLocation()
-            if(route.params?.lat) {
-                setCustomerCoord({
-                    longitude: +route.params?.lon,
-                    latitude: +route.params?.lat
-                })
-            }
-        }, [route.params?.lat])
-    )
-
+            getData();
+            getLocation();
+        }, [])
+    );
+    useEffect(() => {
+        if (route.params?.lat) {
+            setCustomerCoord({
+                longitude: +route.params?.lon,
+                latitude: +route.params?.lat,
+            });
+        } else if (!route.params?.lat) {
+            setCustomerCoord({
+                longitude: null,
+                latitude: null,
+            });
+        }
+    }, [route.params?.lat]);
 
     return (
         <SafeAreaView style={styles.container}>
-            <Pressable onPress={() => {
-                navigation.navigate('Profile')
-            }} style={styles.topCard}>
-                <View style={{flex: 1, marginLeft: 20}}>
-                    <Image source={{uri: `${driver?.imgUrl}`}} style={{height: 80, width: 80, borderRadius: 50}}/>
+            <Pressable
+                onPress={() => {
+                    navigation.navigate("Profile");
+                }}
+                style={styles.topCard}
+            >
+                <View style={{ flex: 1, marginLeft: 20 }}>
+                    <Image
+                        source={{ uri: `${driver?.imgUrl}` }}
+                        style={{ height: 80, width: 80, borderRadius: 50 }}
+                    />
                 </View>
-                <View style={{flex: 4, flexDirection: "column", marginHorizontal: 30, paddingLeft: 30}}>
-                    <Text style={{fontSize: 20, fontWeight: "bold"}}>Hello, {driver?.fullName}</Text>
-                    {!isBooked ?
-                        <View style={[{borderRadius: 30, alignItems: "center", justifyContent: "center", marginVertical: 10, padding: 5}, driver.driverStatus === "Available" ? {backgroundColor: 'green'} : {backgroundColor: 'grey'}]}>
-                            <Text style={{color: "white"}}>{driver?.driverStatus === "Available" ? driver?.driverStatus : "Non Available"}</Text>
+                <View
+                    style={{
+                        flex: 4,
+                        flexDirection: "column",
+                        marginHorizontal: 30,
+                        paddingLeft: 30,
+                    }}
+                >
+                    <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                        Hello, {driver?.fullName}
+                    </Text>
+                    {!isBooked ? (
+                        <View
+                            style={[
+                                {
+                                    borderRadius: 30,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    marginVertical: 10,
+                                    padding: 5,
+                                },
+                                driver.driverStatus === "Available"
+                                    ? { backgroundColor: "green" }
+                                    : { backgroundColor: "grey" },
+                            ]}
+                        >
+                            <Text style={{ color: "white" }}>
+                                {driver?.driverStatus === "Available"
+                                    ? driver?.driverStatus
+                                    : "Non Available"}
+                            </Text>
                         </View>
-                        :
-                        <View style={[{borderRadius: 10, alignItems: "center", justifyContent: "center", marginVertical: 10, padding: 5}, driver.driverStatus === "BOOKED" ? {backgroundColor: 'lightgreen'} : null]}>
-                            <Text style={{color: "white"}}>You are booked until</Text>
-                            <Text style={{color: "white", fontWeight: "bold"}}>{endDate ? date : null}</Text>
+                    ) : (
+                        <View
+                            style={[
+                                {
+                                    borderRadius: 10,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    marginVertical: 10,
+                                    padding: 5,
+                                },
+                                driver.driverStatus === "BOOKED"
+                                    ? { backgroundColor: "lightgreen" }
+                                    : null,
+                            ]}
+                        >
+                            <Text style={{ color: "white" }}>
+                                You are booked until
+                            </Text>
+                            <Text
+                                style={{ color: "white", fontWeight: "bold" }}
+                            >
+                                {endDate ? date : null}
+                            </Text>
                         </View>
-                    }
+                    )}
                 </View>
             </Pressable>
             <View style={styles.bottomCard}>
-                <MapView ref={mapRef} style={styles.map} minZoomLevel={10} provider={PROVIDER_GOOGLE} showsUserLocation={true} zoomControlEnabled={true} >
+                <MapView
+                    ref={mapRef}
+                    style={styles.map}
+                    minZoomLevel={12}
+                    provider={PROVIDER_GOOGLE}
+                    showsUserLocation={true}
+                    zoomControlEnabled={true}
+                    initialRegion={{
+                        latitude: -6.200000,
+                        longitude: 106.816666,
+                        latitudeDelta: 0.0922,
+                        longitudeDelta: 0.0421,
+                    }}
+                >
                     <Marker
-                        coordinate={{latitude: origin.latitude,
-                            longitude: origin.longitude}}
-                        pinColor={'red'}
-                        title={'Origin'}
+                        coordinate={{
+                            latitude: origin.latitude,
+                            longitude: origin.longitude,
+                        }}
+                        pinColor={"blue"}
+                        title={"Origin"}
                     />
-                    {route.params?.lat && 
+                    {customerCoord.latitude !== null ? (
                         <MapViewDirections
                             origin={origin}
                             destination={customerCoord}
-                            apikey={'AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE'}
-                            strokeWidth={5}
+                            apikey={"AIzaSyArgl6qu_3u4Ub5rLzrlQ5YQ3oeOIrrWdE"}
+                            strokeWidth={4}
                             strokeColor="red"
-                            />
-                    }
-                    {customerCoord && 
-                        <Marker
-                        coordinate={{latitude: customerCoord.latitude,
-                            longitude: customerCoord.longitude}}
-                        pinColor={'lightgreen'}
-                        title={'Customer'}
                         />
-                        
-                    }
+                    ) : null}
+                    {customerCoord.latitude !== null ? (
+                        <Marker
+                            coordinate={{
+                                latitude: customerCoord.latitude,
+                                longitude: customerCoord.longitude,
+                            }}
+                            pinColor={"lightgreen"}
+                            title={"Customer"}
+                        />
+                    ) : null}
                 </MapView>
             </View>
         </SafeAreaView>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -174,7 +261,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#DEE9FF"
+        backgroundColor: "#DEE9FF",
     },
     topCard: {
         flex: 1,
@@ -185,7 +272,7 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 30,
         margin: 30,
-        padding: 20
+        padding: 20,
     },
     bottomCard: {
         overflow: "hidden",
@@ -197,10 +284,10 @@ const styles = StyleSheet.create({
         borderTopStartRadius: 30,
         borderTopEndRadius: 30,
         borderWidth: 1,
-        borderColor: "white"
+        borderColor: "white",
     },
     map: {
         height: "100%",
         width: "100%",
-    }
-})
+    },
+});

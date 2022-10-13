@@ -30,7 +30,7 @@ export default function HomeNavigator({ navigation, route }) {
       <Stack.Screen
         name="Trip"
         component={TripScreen}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Driver"
