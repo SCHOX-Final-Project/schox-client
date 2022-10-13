@@ -13,7 +13,7 @@ export default function RootNavigator() {
                 <Stack.Screen name="home" component={HomeTab} options={{headerShown: false}}/>
                 <Stack.Screen name="login" component={LoginScreen} options={{headerShown: false}}/>
                 <Stack.Screen name="register" component={RegisterScreen} options={{headerShown: false}}/>
-                <Stack.Screen name="location" component={LocationScreen}/>
+                <Stack.Screen name="location" component={LocationScreen} options={{headerShown: true}}/>
             </Stack.Navigator>
         </NavigationContainer>
     )
